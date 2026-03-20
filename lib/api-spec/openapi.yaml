@@ -1,22 +1,30 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: India Election Portal API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: elections
+    description: Election operations
+  - name: candidates
+    description: Candidate operations
+  - name: users
+    description: User management
+  - name: admin
+    description: Admin operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +32,430 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new voter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /elections:
+    get:
+      operationId: getElections
+      tags: [elections]
+      summary: Get all elections
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [live, upcoming, completed]
+      responses:
+        "200":
+          description: List of elections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Election"
+
+    post:
+      operationId: createElection
+      tags: [admin]
+      summary: Create election (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateElectionRequest"
+      responses:
+        "201":
+          description: Election created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Election"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /elections/{id}:
+    get:
+      operationId: getElection
+      tags: [elections]
+      summary: Get election by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Election details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ElectionWithCandidates"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    put:
+      operationId: updateElection
+      tags: [admin]
+      summary: Update election (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateElectionRequest"
+      responses:
+        "200":
+          description: Election updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Election"
+
+    delete:
+      operationId: deleteElection
+      tags: [admin]
+      summary: Delete election (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /candidates:
+    get:
+      operationId: getCandidates
+      tags: [candidates]
+      summary: Get all candidates
+      parameters:
+        - name: electionId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Candidate"
+
+    post:
+      operationId: createCandidate
+      tags: [admin]
+      summary: Create candidate (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCandidateRequest"
+      responses:
+        "201":
+          description: Candidate created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+
+  /candidates/{id}:
+    put:
+      operationId: updateCandidate
+      tags: [admin]
+      summary: Update candidate (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCandidateRequest"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+
+    delete:
+      operationId: deleteCandidate
+      tags: [admin]
+      summary: Delete candidate (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/users:
+    get:
+      operationId: adminGetUsers
+      tags: [admin]
+      summary: Get all users (admin)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserProfile"
+
+  /admin/users/{id}:
+    put:
+      operationId: adminUpdateUser
+      tags: [admin]
+      summary: Update user role (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+    delete:
+      operationId: adminDeleteUser
+      tags: [admin]
+      summary: Delete user (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /elections/{id}/vote:
+    post:
+      operationId: castVote
+      tags: [elections]
+      summary: Cast vote for a candidate in an election (one vote per election per user)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CastVoteRequest"
+      responses:
+        "201":
+          description: Vote cast successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Already voted or election not live
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /elections/{id}/my-vote:
+    get:
+      operationId: getMyVote
+      tags: [elections]
+      summary: Check if current user has voted in an election
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vote status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteStatus"
+
+  /elections/{id}/results:
+    get:
+      operationId: getElectionResults
+      tags: [elections]
+      summary: Get vote counts per candidate for an election
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Election results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CandidateResult"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +466,353 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    RegisterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        aadhaarNumber:
+          type: string
+        voterIdNumber:
+          type: string
+        mobileNumber:
+          type: string
+        password:
+          type: string
+        dateOfBirth:
+          type: string
+        address:
+          type: string
+        state:
+          type: string
+        constituency:
+          type: string
+      required:
+        - name
+        - aadhaarNumber
+        - voterIdNumber
+        - mobileNumber
+        - password
+        - dateOfBirth
+        - address
+        - state
+        - constituency
+
+    LoginRequest:
+      type: object
+      properties:
+        aadhaarNumber:
+          type: string
+        password:
+          type: string
+      required:
+        - aadhaarNumber
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        message:
+          type: string
+      required:
+        - user
+        - message
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        aadhaarNumber:
+          type: string
+        voterIdNumber:
+          type: string
+        mobileNumber:
+          type: string
+        dateOfBirth:
+          type: string
+        address:
+          type: string
+        state:
+          type: string
+        constituency:
+          type: string
+        role:
+          type: string
+          enum: [voter, admin]
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - aadhaarNumber
+        - voterIdNumber
+        - mobileNumber
+        - role
+        - createdAt
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [voter, admin]
+      required:
+        - role
+
+    Election:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        electionType:
+          type: string
+          enum: [general, state, local, bypolls]
+        status:
+          type: string
+          enum: [live, upcoming, completed]
+        startDate:
+          type: string
+        endDate:
+          type: string
+        state:
+          type: string
+        constituency:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - electionType
+        - status
+        - startDate
+        - endDate
+        - state
+        - createdAt
+
+    ElectionWithCandidates:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        electionType:
+          type: string
+          enum: [general, state, local, bypolls]
+        status:
+          type: string
+          enum: [live, upcoming, completed]
+        startDate:
+          type: string
+        endDate:
+          type: string
+        state:
+          type: string
+        constituency:
+          type: string
+        createdAt:
+          type: string
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/Candidate"
+      required:
+        - id
+        - title
+        - electionType
+        - status
+        - startDate
+        - endDate
+        - state
+        - createdAt
+        - candidates
+
+    CreateElectionRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        electionType:
+          type: string
+          enum: [general, state, local, bypolls]
+        status:
+          type: string
+          enum: [live, upcoming, completed]
+        startDate:
+          type: string
+        endDate:
+          type: string
+        state:
+          type: string
+        constituency:
+          type: string
+      required:
+        - title
+        - electionType
+        - status
+        - startDate
+        - endDate
+        - state
+
+    Candidate:
+      type: object
+      properties:
+        id:
+          type: integer
+        electionId:
+          type: integer
+        name:
+          type: string
+        partyName:
+          type: string
+        partySymbol:
+          type: string
+        constituency:
+          type: string
+        state:
+          type: string
+        age:
+          type: integer
+        education:
+          type: string
+        bio:
+          type: string
+        imageUrl:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - electionId
+        - name
+        - partyName
+        - state
+        - createdAt
+
+    CreateCandidateRequest:
+      type: object
+      properties:
+        electionId:
+          type: integer
+        name:
+          type: string
+        partyName:
+          type: string
+        partySymbol:
+          type: string
+        constituency:
+          type: string
+        state:
+          type: string
+        age:
+          type: integer
+        education:
+          type: string
+        bio:
+          type: string
+        imageUrl:
+          type: string
+      required:
+        - electionId
+        - name
+        - partyName
+        - state
+
+    CastVoteRequest:
+      type: object
+      properties:
+        candidateId:
+          type: integer
+      required:
+        - candidateId
+
+    VoteStatus:
+      type: object
+      properties:
+        hasVoted:
+          type: boolean
+        candidateId:
+          type: integer
+        candidateName:
+          type: string
+        partyName:
+          type: string
+        votedAt:
+          type: string
+      required:
+        - hasVoted
+
+    CandidateResult:
+      type: object
+      properties:
+        candidateId:
+          type: integer
+        candidateName:
+          type: string
+        partyName:
+          type: string
+        partySymbol:
+          type: string
+        voteCount:
+          type: integer
+      required:
+        - candidateId
+        - candidateName
+        - partyName
+        - voteCount
+
+    AdminStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalElections:
+          type: integer
+        liveElections:
+          type: integer
+        upcomingElections:
+          type: integer
+        completedElections:
+          type: integer
+        totalCandidates:
+          type: integer
+        totalVotesCast:
+          type: integer
+      required:
+        - totalUsers
+        - totalElections
+        - liveElections
+        - upcomingElections
+        - completedElections
+        - totalCandidates
+        - totalVotesCast

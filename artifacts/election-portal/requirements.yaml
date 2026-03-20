@@ -1,0 +1,22 @@
+packages:
+  "framer-motion": "For page transitions, smooth enter animations, and micro-interactions"
+  "recharts": "For rendering beautiful election results charts"
+  "date-fns": "For elegant date formatting across the app"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes without conflicts"
+
+images:
+  - path: "artifacts/election-portal/public/images/logo.png"
+    description: "Modern minimalist geometric emblem logo for an Indian election portal, incorporating subtle saffron, white, and green colors, transparent background, highly polished"
+    aspect_ratio: "1:1"
+  - path: "artifacts/election-portal/public/images/hero-bg.png"
+    description: "Abstract subtle background with soft gradients of saffron orange, pure white, and vibrant green, modern professional clean aesthetic, low opacity light rays"
+    aspect_ratio: "16:9"
+  - path: "artifacts/election-portal/public/images/auth-bg.png"
+    description: "Clean modern architectural pattern featuring Indian parliament motifs, very subtle, monochromatic white and light gray, abstract"
+    aspect_ratio: "4:3"
+
+notes:
+  - Using generated Orval hooks from @workspace/api-client-react
+  - Implementing full routing with Wouter
+  - Handling authentication via session cookies and useGetCurrentUser polling
