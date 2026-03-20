@@ -1,14 +1,20 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Fingerprint, Lock, Phone, User, Calendar, MapPin, Hash } from "lucide-react";
+import { Shield, Fingerprint, Lock, User, Hash, ChevronDown } from "lucide-react";
+import { getStates, getDistricts, getTalukas, getVillages } from "@/lib/india-locations";
 
 export function Login() {
-  const { login, isLoggingIn } = useAuth();
+  const { login, isLoggingIn, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({ aadhaarNumber: '', password: '' });
+
+  useEffect(() => {
+    if (isAuthenticated) setLocation('/');
+  }, [isAuthenticated]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +86,12 @@ export function Login() {
               >
                 {isLoggingIn ? "Authenticating..." : "Secure Login"}
               </button>
+
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mt-4">
+                <p className="text-xs font-semibold text-amber-800 mb-1">Admin Demo Credentials</p>
+                <p className="text-xs text-amber-700">Aadhaar: <span className="font-mono font-bold">123456789012</span></p>
+                <p className="text-xs text-amber-700">Password: <span className="font-mono font-bold">admin123</span></p>
+              </div>
             </form>
           </motion.div>
         </div>
@@ -88,19 +100,90 @@ export function Login() {
   );
 }
 
+const selectClass = "w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all appearance-none bg-white text-slate-700 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed";
+
+function SelectField({ label, value, onChange, options, disabled, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void;
+  options: string[]; disabled?: boolean; placeholder: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-semibold text-slate-700">{label}</label>
+      <div className="relative">
+        <select
+          required
+          className={selectClass}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          disabled={disabled}
+        >
+          <option value="">{placeholder}</option>
+          {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+      </div>
+    </div>
+  );
+}
+
 export function Register() {
-  const { register, isRegistering } = useAuth();
+  const { register, isRegistering, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
-    name: '', aadhaarNumber: '', voterIdNumber: '', mobileNumber: '', 
-    dateOfBirth: '', state: '', constituency: '', address: '', password: ''
+    name: '', aadhaarNumber: '', voterIdNumber: '', mobileNumber: '',
+    dateOfBirth: '', password: '', address: '',
+    state: '', district: '', taluka: '', village: '',
+    constituency: '',
   });
+
+  const states = getStates();
+  const districts = formData.state ? getDistricts(formData.state) : [];
+  const talukas = formData.district ? getTalukas(formData.state, formData.district) : [];
+  const villages = formData.taluka ? getVillages(formData.state, formData.district, formData.taluka) : [];
+
+  useEffect(() => {
+    if (isAuthenticated) setLocation('/');
+  }, [isAuthenticated]);
+
+  const handleStateChange = (val: string) => {
+    setFormData(f => ({ ...f, state: val, district: '', taluka: '', village: '', address: '', constituency: '' }));
+  };
+  const handleDistrictChange = (val: string) => {
+    setFormData(f => ({ ...f, district: val, taluka: '', village: '', constituency: val }));
+  };
+  const handleTalukaChange = (val: string) => {
+    setFormData(f => ({ ...f, taluka: val, village: '' }));
+  };
+  const handleVillageChange = (val: string) => {
+    setFormData(f => ({
+      ...f,
+      village: val,
+      address: val ? `${val}, ${f.taluka}, ${f.district}, ${f.state}` : f.address,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.state || !formData.district || !formData.taluka || !formData.village) {
+      toast({ title: "Location required", description: "Please select your State, District, Taluka and Village.", variant: "destructive" });
+      return;
+    }
     try {
-      await register({ data: formData });
-      toast({ title: "Registration successful", description: "You can now participate in elections." });
+      await register({
+        data: {
+          name: formData.name,
+          aadhaarNumber: formData.aadhaarNumber,
+          voterIdNumber: formData.voterIdNumber,
+          mobileNumber: formData.mobileNumber,
+          dateOfBirth: formData.dateOfBirth,
+          password: formData.password,
+          address: formData.address,
+          state: formData.state,
+          constituency: formData.constituency || formData.district,
+        }
+      });
+      toast({ title: "Registration successful!", description: "Welcome to the India Election Portal." });
     } catch (err: any) {
       toast({ title: "Registration failed", description: err.message || "Please check your inputs", variant: "destructive" });
     }
@@ -111,81 +194,133 @@ export function Register() {
       <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl w-full mx-auto">
           <div className="text-center mb-10">
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-primary/10 rounded-2xl mx-auto mb-4">
+              <User className="w-7 h-7 text-primary" />
+            </div>
             <h2 className="text-3xl font-display font-bold text-slate-900">Voter Registration</h2>
             <p className="text-slate-500 mt-2">Link your Aadhaar and Voter ID to create a secure digital identity.</p>
           </div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100"
           >
             <form onSubmit={handleSubmit} className="space-y-6">
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Full Name (As on Aadhaar)</label>
-                  <input required type="text" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
-                    value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                </div>
-                
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Aadhaar Number</label>
-                  <input required type="text" maxLength={12} className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all font-mono"
-                    placeholder="12 Digits"
-                    value={formData.aadhaarNumber} onChange={e => setFormData({...formData, aadhaarNumber: e.target.value.replace(/\D/g, '')})} />
-                </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Voter ID (EPIC) Number</label>
-                  <input required type="text" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all uppercase"
-                    value={formData.voterIdNumber} onChange={e => setFormData({...formData, voterIdNumber: e.target.value})} />
-                </div>
+              {/* Personal Info */}
+              <div>
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100">Personal Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">Full Name (As on Aadhaar)</label>
+                    <input required type="text" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
+                      placeholder="Enter your full name"
+                      value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Mobile Number</label>
-                  <input required type="text" maxLength={10} className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
-                    value={formData.mobileNumber} onChange={e => setFormData({...formData, mobileNumber: e.target.value.replace(/\D/g, '')})} />
-                </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Aadhaar Number</label>
+                    <input required type="text" maxLength={12} className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all font-mono tracking-widest"
+                      placeholder="12 Digit Number"
+                      value={formData.aadhaarNumber} onChange={e => setFormData({ ...formData, aadhaarNumber: e.target.value.replace(/\D/g, '') })} />
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Date of Birth</label>
-                  <input required type="date" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all text-slate-700"
-                    value={formData.dateOfBirth} onChange={e => setFormData({...formData, dateOfBirth: e.target.value})} />
-                </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Voter ID (EPIC) Number</label>
+                    <input required type="text" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all uppercase"
+                      placeholder="e.g. ABC1234567"
+                      value={formData.voterIdNumber} onChange={e => setFormData({ ...formData, voterIdNumber: e.target.value })} />
+                  </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">State</label>
-                  <input required type="text" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
-                    value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} />
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Mobile Number</label>
+                    <input required type="text" maxLength={10} className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
+                      placeholder="10 digit mobile"
+                      value={formData.mobileNumber} onChange={e => setFormData({ ...formData, mobileNumber: e.target.value.replace(/\D/g, '') })} />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-slate-700">Date of Birth</label>
+                    <input required type="date" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all text-slate-700"
+                      value={formData.dateOfBirth} onChange={e => setFormData({ ...formData, dateOfBirth: e.target.value })} />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Constituency</label>
-                <input required type="text" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
-                  value={formData.constituency} onChange={e => setFormData({...formData, constituency: e.target.value})} />
+              {/* Location — cascading dropdowns */}
+              <div>
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100">Residential Location</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <SelectField
+                    label="State / Union Territory"
+                    value={formData.state}
+                    onChange={handleStateChange}
+                    options={states}
+                    placeholder="— Select State —"
+                  />
+
+                  <SelectField
+                    label="District"
+                    value={formData.district}
+                    onChange={handleDistrictChange}
+                    options={districts}
+                    disabled={!formData.state}
+                    placeholder={formData.state ? "— Select District —" : "Select state first"}
+                  />
+
+                  <SelectField
+                    label="Taluka / Sub-District"
+                    value={formData.taluka}
+                    onChange={handleTalukaChange}
+                    options={talukas}
+                    disabled={!formData.district}
+                    placeholder={formData.district ? "— Select Taluka —" : "Select district first"}
+                  />
+
+                  <SelectField
+                    label="Village / Town / Ward"
+                    value={formData.village}
+                    onChange={handleVillageChange}
+                    options={villages}
+                    disabled={!formData.taluka}
+                    placeholder={formData.taluka ? "— Select Village —" : "Select taluka first"}
+                  />
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">Full Address</label>
+                    <textarea required rows={2} className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all resize-none"
+                      placeholder="House No., Street, Area..."
+                      value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} />
+                  </div>
+
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-sm font-semibold text-slate-700">Constituency</label>
+                    <input type="text" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
+                      placeholder="Your parliamentary/assembly constituency"
+                      value={formData.constituency} onChange={e => setFormData({ ...formData, constituency: e.target.value })} />
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-semibold text-slate-700">Residential Address</label>
-                <textarea required rows={2} className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all resize-none"
-                  value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} />
+              {/* Password */}
+              <div>
+                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100">Account Security</h3>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-slate-700">Create Password</label>
+                  <input required type="password" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
+                    placeholder="Minimum 6 characters"
+                    value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                </div>
               </div>
 
-              <div className="space-y-1.5 border-t border-slate-100 pt-6">
-                <label className="text-sm font-semibold text-slate-700">Create Password</label>
-                <input required type="password" className="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-primary outline-none transition-all"
-                  value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-              </div>
-
-              <div className="pt-4 flex items-center justify-between">
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <Link href="/login" className="text-sm text-slate-500 hover:text-primary font-medium">
                   Already registered? Login
                 </Link>
                 <button
                   type="submit"
                   disabled={isRegistering}
-                  className="px-8 py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 focus:ring-4 focus:ring-primary/20 transition-all shadow-lg shadow-primary/25 disabled:opacity-70"
+                  className="w-full sm:w-auto px-10 py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 focus:ring-4 focus:ring-primary/20 transition-all shadow-lg shadow-primary/25 disabled:opacity-70"
                 >
                   {isRegistering ? "Registering..." : "Submit Registration"}
                 </button>
@@ -202,14 +337,14 @@ function AuthSidebar() {
   return (
     <div className="hidden lg:flex w-2/5 bg-slate-900 relative overflow-hidden flex-col justify-between p-12">
       <div className="absolute inset-0 z-0">
-        <img 
-          src={`${import.meta.env.BASE_URL}images/auth-bg.png`} 
-          alt="Pattern" 
+        <img
+          src={`${import.meta.env.BASE_URL}images/auth-bg.png`}
+          alt="Pattern"
           className="w-full h-full object-cover opacity-10"
         />
         <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent mix-blend-overlay"></div>
       </div>
-      
+
       <div className="relative z-10">
         <Link href="/" className="inline-block bg-white/10 backdrop-blur-sm p-3 rounded-2xl mb-12 border border-white/10 hover:bg-white/20 transition-colors">
           <img src={`${import.meta.env.BASE_URL}images/logo.png`} alt="Logo" className="w-10 h-10" />
@@ -218,12 +353,12 @@ function AuthSidebar() {
           The foundation of democracy is a <span className="text-primary">secure vote</span>.
         </h1>
         <p className="text-slate-400 text-lg leading-relaxed max-w-sm">
-          Aadhaar-linked biometric authentication ensures every citizen gets exactly one vote, eliminating fraud and strengthening the electoral process.
+          Aadhaar-linked authentication ensures every citizen gets exactly one vote, eliminating fraud and strengthening the electoral process.
         </p>
       </div>
 
       <div className="relative z-10 flex items-center space-x-4 text-slate-400 text-sm bg-black/20 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
-        <Shield className="w-8 h-8 text-green-400" />
+        <Shield className="w-8 h-8 text-green-400 shrink-0" />
         <p>End-to-end encrypted. Your voting choices remain strictly confidential and anonymized.</p>
       </div>
     </div>
