@@ -1,8 +1,8 @@
-import { useGetElection, useGetMyVote, useCastVote, useGetElectionResults } from "@workspace/api-client-react";
+import { useGetElection, useGetMyVote, useCastVote, useGetElectionResults, useGetECIResults } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { format } from "date-fns";
-import { MapPin, Calendar, Info, CheckCircle, ShieldAlert, BarChart2, Trophy, X, Vote, AlertTriangle, User } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { MapPin, Calendar, Info, CheckCircle, ShieldAlert, BarChart2, Trophy, X, Vote, AlertTriangle, User, ExternalLink } from "lucide-react";
 import { getStatusColor, getElectionTypeLabel } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -156,6 +156,9 @@ export default function ElectionDetail() {
   const { data: voteStatus, refetch: refetchVoteStatus } = useGetMyVote(electionId, { query: { enabled: isAuthenticated } });
   const { data: results, dataUpdatedAt } = useGetElectionResults(electionId, {
     query: { refetchInterval: 30 * 1000 }
+  });
+  const { data: eciResults } = useGetECIResults(electionId, {
+    query: { enabled: true, retry: false }
   });
 
   const castVoteMutation = useCastVote({
@@ -468,7 +471,147 @@ export default function ElectionDetail() {
           )}
         </div>
 
-        {/* Results Section */}
+        {/* ECI Official Results — Real party-wise data */}
+        {eciResults && (
+          <div className="scroll-mt-24">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <BarChart2 className="w-7 h-7 text-primary" />
+                <h2 className="text-2xl font-display font-bold text-slate-900">
+                  Official ECI Results
+                </h2>
+                <span className="bg-green-100 text-green-700 border border-green-300 text-xs font-bold px-3 py-1 rounded-full">
+                  ✓ Verified Data
+                </span>
+              </div>
+              <a
+                href="https://results.eci.gov.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Source: results.eci.gov.in
+              </a>
+            </div>
+
+            {/* Alliance summary (for national elections) */}
+            {eciResults.allianceSummary && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {eciResults.allianceSummary.map((alliance) => {
+                  const pct = Math.round((alliance.seats / eciResults.totalSeats) * 100);
+                  const isMajority = alliance.seats >= eciResults.majorityMark;
+                  return (
+                    <motion.div
+                      key={alliance.name}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`bg-white rounded-2xl border p-5 shadow-sm ${isMajority ? 'border-amber-300 ring-2 ring-amber-200/50' : 'border-slate-200'}`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-4 h-4 rounded-full shrink-0" style={{ background: alliance.color }} />
+                        <span className="font-bold text-lg text-slate-900">{alliance.name}</span>
+                        {isMajority && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold border border-amber-200">Majority</span>}
+                      </div>
+                      <div className="text-4xl font-black text-slate-900 mb-1">{alliance.seats}</div>
+                      <div className="text-sm text-slate-500 mb-3">seats &nbsp;·&nbsp; {pct}% of {eciResults.totalSeats}</div>
+                      <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${pct}%` }}
+                          transition={{ duration: 1.2, ease: "easeOut" }}
+                          className="h-full rounded-full"
+                          style={{ background: alliance.color }}
+                        />
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1.5">{alliance.description}</div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Majority mark indicator */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-4 flex items-center gap-4">
+              <div className="text-xs text-slate-500 font-medium">Majority mark: <strong className="text-slate-900">{eciResults.majorityMark}</strong> seats</div>
+              <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden relative">
+                {/* Full seat bar stacked */}
+                <div className="flex h-full">
+                  {eciResults.results.slice(0, 12).map((p) => (
+                    <div
+                      key={p.shortName}
+                      className="h-full"
+                      style={{ width: `${(p.seats / eciResults.totalSeats) * 100}%`, background: p.color, minWidth: p.seats > 5 ? 2 : 0 }}
+                      title={`${p.shortName}: ${p.seats} seats`}
+                    />
+                  ))}
+                </div>
+                {/* Majority line */}
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-red-600"
+                  style={{ left: `${(eciResults.majorityMark / eciResults.totalSeats) * 100}%` }}
+                  title={`Majority: ${eciResults.majorityMark}`}
+                />
+              </div>
+              <div className="text-xs text-slate-500">Total: <strong className="text-slate-900">{eciResults.totalSeats}</strong> seats</div>
+            </div>
+
+            {/* Party-wise breakdown */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span>Party</span>
+                <span>Seats Won</span>
+              </div>
+              <div className="divide-y divide-slate-100 max-h-[480px] overflow-y-auto">
+                {[...eciResults.results]
+                  .sort((a, b) => b.seats - a.seats)
+                  .map((p, idx) => {
+                    const pct = Math.round((p.seats / eciResults.totalSeats) * 100);
+                    return (
+                      <div key={p.shortName} className="px-5 py-3.5">
+                        <div className="flex justify-between items-center mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${idx === 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                              {idx + 1}
+                            </span>
+                            <div className="w-3 h-3 rounded-full shrink-0" style={{ background: p.color }} />
+                            <div>
+                              <span className="font-bold text-slate-900 text-sm">{p.shortName}</span>
+                              <span className="text-slate-400 text-xs ml-2 hidden sm:inline">{p.party}</span>
+                              {p.alliance !== "OTHER" && (
+                                <span className={`ml-2 text-xs px-1.5 py-0.5 rounded font-semibold ${p.alliance === "NDA" ? "bg-orange-100 text-orange-700" : "bg-green-100 text-green-700"}`}>
+                                  {p.alliance}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="font-black text-slate-900 text-lg">{p.seats}</span>
+                            <span className="text-slate-400 text-xs ml-1">({pct}%)</span>
+                          </div>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(p.seats / eciResults.results[0].seats) * 100}%` }}
+                            transition={{ duration: 0.9, delay: idx * 0.04, ease: "easeOut" }}
+                            className="h-full rounded-full"
+                            style={{ background: p.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+              <div className="px-5 py-3 bg-slate-50 border-t border-slate-100 text-xs text-slate-500 flex items-center justify-between">
+                <span>Source: Election Commission of India — results.eci.gov.in</span>
+                <span className="font-semibold text-slate-700">Total {eciResults.totalSeats} seats</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Portal Vote Count Results Section */}
         {(isLive || isCompleted) && results && results.length > 0 && (
           <div ref={resultsRef} className="scroll-mt-24">
             <div className="flex items-center gap-3 mb-6">

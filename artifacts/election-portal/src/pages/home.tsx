@@ -34,9 +34,9 @@ export default function Home() {
 
       {/* Breaking News Ticker */}
       {tickerItems.length > 0 && (
-        <div className="bg-red-600 text-white text-sm py-2 overflow-hidden sticky top-0 z-40 shadow-lg">
+        <div className="text-white text-sm py-2.5 overflow-hidden sticky top-0 z-40 shadow-lg" style={{ background: "linear-gradient(90deg, #FF6600 0%, #cc4400 40%, #1a1a2e 100%)" }}>
           <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-red-800 px-3 py-0.5 rounded font-bold uppercase tracking-wide shrink-0 text-xs">
+            <div className="flex items-center gap-2 bg-white/20 backdrop-blur px-3 py-0.5 rounded-full font-bold uppercase tracking-wide shrink-0 text-xs border border-white/30">
               <Zap className="w-3 h-3" />
               Breaking
             </div>

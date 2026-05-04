@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { db, electionsTable, candidatesTable, votesTable, usersTable } from "@workspace/db";
 import { eq, and, count, sql } from "drizzle-orm";
+import { getECIData } from "../lib/eci-data";
 
 const router: IRouter = Router();
 
@@ -125,6 +126,22 @@ router.get("/elections/:id/results", async (req, res) => {
     .groupBy(candidatesTable.id, candidatesTable.name, candidatesTable.partyName, candidatesTable.partySymbol);
 
   res.json(results.map(r => ({ ...r, voteCount: Number(r.voteCount) })));
+});
+
+// Real ECI party-wise data for known elections
+router.get("/elections/:id/eci-results", async (req, res) => {
+  const electionId = parseInt(req.params.id);
+  if (isNaN(electionId)) { res.status(400).json({ error: "Invalid id" }); return; }
+
+  const [election] = await db.select().from(electionsTable).where(eq(electionsTable.id, electionId)).limit(1);
+  if (!election) { res.status(404).json({ error: "Election not found" }); return; }
+
+  const eciData = getECIData(election.title);
+  if (!eciData) {
+    res.status(404).json({ error: "No ECI data available for this election" });
+    return;
+  }
+  res.json({ electionTitle: election.title, ...eciData });
 });
 
 export default router;
