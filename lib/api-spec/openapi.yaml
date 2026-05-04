@@ -456,6 +456,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminStats"
 
+  /news:
+    get:
+      operationId: getElectionNews
+      tags: [elections]
+      summary: Get latest election news from RSS feeds
+      responses:
+        "200":
+          description: Election news
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsResponse"
+
+  /news/refresh:
+    post:
+      operationId: refreshNews
+      tags: [admin]
+      summary: Force refresh news from RSS feeds (admin only)
+      responses:
+        "200":
+          description: News refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "403":
+          description: Forbidden
+
+  /sync-statuses:
+    post:
+      operationId: syncElectionStatuses
+      tags: [admin]
+      summary: Sync election statuses based on dates (admin only)
+      responses:
+        "200":
+          description: Sync complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncStatusResponse"
+        "403":
+          description: Forbidden
+
 components:
   schemas:
     HealthStatus:
@@ -816,3 +859,59 @@ components:
         - completedElections
         - totalCandidates
         - totalVotesCast
+
+    NewsItem:
+      type: object
+      properties:
+        title:
+          type: string
+        link:
+          type: string
+        pubDate:
+          type: string
+        source:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+      required:
+        - title
+        - link
+        - pubDate
+        - source
+        - description
+        - category
+
+    NewsResponse:
+      type: object
+      properties:
+        news:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewsItem"
+        lastFetchedAt:
+          type: string
+          nullable: true
+        total:
+          type: integer
+      required:
+        - news
+        - total
+
+    SyncStatusResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        updated:
+          type: integer
+        toLive:
+          type: integer
+        toCompleted:
+          type: integer
+      required:
+        - message
+        - updated
+        - toLive
+        - toCompleted

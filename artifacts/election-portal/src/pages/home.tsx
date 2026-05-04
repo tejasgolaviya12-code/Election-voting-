@@ -1,13 +1,15 @@
 import { useGetElections } from "@workspace/api-client-react";
+import { useGetElectionNews } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
-import { format } from "date-fns";
-import { Calendar, MapPin, ChevronRight, Vote, ShieldCheck, Users, BarChart2, ArrowRight } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { Calendar, MapPin, ChevronRight, Vote, ShieldCheck, Users, BarChart2, ArrowRight, Newspaper, ExternalLink, RefreshCw } from "lucide-react";
 import { getStatusColor, getElectionTypeLabel } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 
 export default function Home() {
   const { data: elections, isLoading } = useGetElections();
+  const { data: newsData, isLoading: newsLoading, refetch: refetchNews } = useGetElectionNews();
   const { isAuthenticated } = useAuth();
 
   const liveElections = elections?.filter(e => e.status === 'live') || [];
@@ -205,6 +207,91 @@ export default function Home() {
 
           </div>
         )}
+      </div>
+
+      {/* Election News Section */}
+      <div className="bg-slate-900 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Newspaper className="w-7 h-7 text-primary" />
+                <h2 className="text-3xl font-display font-bold text-white">Election News</h2>
+              </div>
+              <p className="text-slate-400">
+                Latest updates from NDTV, Times of India, The Hindu & more
+                {newsData?.lastFetchedAt && (
+                  <span className="ml-2 text-xs text-slate-500">
+                    · Updated {formatDistanceToNow(new Date(newsData.lastFetchedAt), { addSuffix: true })}
+                  </span>
+                )}
+              </p>
+            </div>
+            <button
+              onClick={() => refetchNews()}
+              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-sm font-medium transition-colors border border-white/10"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+          </div>
+
+          {newsLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[1,2,3,4,5,6].map(i => (
+                <div key={i} className="bg-white/5 rounded-2xl h-44 animate-pulse border border-white/10" />
+              ))}
+            </div>
+          ) : !newsData?.news?.length ? (
+            <div className="text-center py-16 text-slate-500">
+              <Newspaper className="w-12 h-12 mx-auto mb-4 opacity-30" />
+              <p>News is being fetched from sources. Check back shortly.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {newsData.news.slice(0, 9).map((item, i) => (
+                <motion.a
+                  key={i}
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-2xl p-5 flex flex-col gap-3 transition-all duration-200 group cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
+                      {item.source}
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-300 transition-colors" />
+                  </div>
+                  <h3 className="text-white font-semibold text-sm leading-snug line-clamp-3 group-hover:text-primary transition-colors">
+                    {item.title}
+                  </h3>
+                  {item.description && (
+                    <p className="text-slate-400 text-xs leading-relaxed line-clamp-2">{item.description}</p>
+                  )}
+                  <div className="mt-auto flex items-center justify-between text-xs text-slate-500">
+                    <span>{item.category}</span>
+                    <span>
+                      {(() => {
+                        try { return formatDistanceToNow(new Date(item.pubDate), { addSuffix: true }); }
+                        catch { return ''; }
+                      })()}
+                    </span>
+                  </div>
+                </motion.a>
+              ))}
+            </div>
+          )}
+
+          {newsData && newsData.total > 9 && (
+            <p className="text-center text-slate-500 text-sm mt-8">
+              Showing 9 of {newsData.total} election news articles
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
