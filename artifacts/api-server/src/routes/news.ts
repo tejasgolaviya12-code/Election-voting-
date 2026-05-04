@@ -1,11 +1,16 @@
 import { Router, type IRouter } from "express";
-import { getCachedNews, refreshElectionNews } from "../lib/news-fetcher";
+import { getCachedNews, getCachedCandidateUpdates, refreshElectionNews } from "../lib/news-fetcher";
 import { syncElectionStatuses } from "../lib/scheduler";
 
 const router: IRouter = Router();
 
 router.get("/news", (_req, res) => {
   const data = getCachedNews();
+  res.json(data);
+});
+
+router.get("/news/candidate-updates", (_req, res) => {
+  const data = getCachedCandidateUpdates();
   res.json(data);
 });
 

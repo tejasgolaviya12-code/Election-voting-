@@ -150,9 +150,13 @@ export default function ElectionDetail() {
   const resultsRef = useRef<HTMLDivElement>(null);
   const [confirmCandidate, setConfirmCandidate] = useState<ConfirmCandidate | null>(null);
 
-  const { data: election, isLoading, error } = useGetElection(electionId);
+  const { data: election, isLoading, error } = useGetElection(electionId, {
+    query: { refetchInterval: 30 * 1000 }
+  });
   const { data: voteStatus, refetch: refetchVoteStatus } = useGetMyVote(electionId, { query: { enabled: isAuthenticated } });
-  const { data: results } = useGetElectionResults(electionId);
+  const { data: results, dataUpdatedAt } = useGetElectionResults(electionId, {
+    query: { refetchInterval: 30 * 1000 }
+  });
 
   const castVoteMutation = useCastVote({
     mutation: {

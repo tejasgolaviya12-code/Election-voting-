@@ -12,8 +12,24 @@ export interface NewsItem {
   category: string;
 }
 
+export interface CandidateUpdate {
+  title: string;
+  link: string;
+  pubDate: string;
+  source: string;
+  description: string;
+  updateType: "joins" | "leaves" | "expelled" | "general";
+  party?: string;
+}
+
 export interface NewsResponse {
   news: NewsItem[];
+  lastFetchedAt: string | null;
+  total: number;
+}
+
+export interface CandidateUpdatesResponse {
+  updates: CandidateUpdate[];
   lastFetchedAt: string | null;
   total: number;
 }
@@ -25,10 +41,8 @@ export interface SyncStatusResponse {
   toCompleted: number;
 }
 
-export const getElectionNewsUrl = () => `/api/news`;
-
 export const getElectionNews = async (): Promise<NewsResponse> =>
-  customFetch<NewsResponse>(getElectionNewsUrl(), { method: "GET" });
+  customFetch<NewsResponse>(`/api/news`, { method: "GET" });
 
 export const getElectionNewsQueryKey = () => [`/api/news`] as const;
 
@@ -39,7 +53,26 @@ export const useGetElectionNews = <TData = NewsResponse, TError = ErrorType<unkn
   return useQuery<NewsResponse, TError, TData>({
     queryKey: getElectionNewsQueryKey(),
     queryFn: getElectionNews,
-    staleTime: 1000 * 60 * 15,
+    refetchInterval: 2 * 60 * 1000, // auto-refresh every 2 minutes
+    staleTime: 60 * 1000,
+    ...queryOptions,
+  });
+};
+
+export const getCandidateUpdates = async (): Promise<CandidateUpdatesResponse> =>
+  customFetch<CandidateUpdatesResponse>(`/api/news/candidate-updates`, { method: "GET" });
+
+export const getCandidateUpdatesQueryKey = () => [`/api/news/candidate-updates`] as const;
+
+export const useGetCandidateUpdates = <TData = CandidateUpdatesResponse, TError = ErrorType<unknown>>(options?: {
+  query?: UseQueryOptions<CandidateUpdatesResponse, TError, TData>;
+}) => {
+  const { query: queryOptions } = options ?? {};
+  return useQuery<CandidateUpdatesResponse, TError, TData>({
+    queryKey: getCandidateUpdatesQueryKey(),
+    queryFn: getCandidateUpdates,
+    refetchInterval: 2 * 60 * 1000,
+    staleTime: 60 * 1000,
     ...queryOptions,
   });
 };

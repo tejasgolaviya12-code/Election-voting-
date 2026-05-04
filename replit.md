@@ -94,3 +94,40 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+## India Election Portal
+
+Full-stack election voting portal at `artifacts/election-portal` (React + Vite) backed by `artifacts/api-server` (Express + PostgreSQL/Drizzle).
+
+### Real Indian Election Data (seeded on first boot)
+- **18th Lok Sabha General Election 2024** (completed) — NDA 293 seats, INDIA 232 seats
+- **Delhi Assembly Election 2025** (completed) — BJP won 48/70 seats
+- **Bihar Assembly Election 2025** (upcoming, Oct–Nov 2025)
+- **West Bengal Assembly Election 2026** (upcoming)
+- **Kerala Assembly Election 2026** (upcoming)
+- **Tamil Nadu Assembly Election 2026** (upcoming)
+- **MP By-Elections 2025** (upcoming)
+- Real candidates with bios for all elections (Narendra Modi, Rahul Gandhi, Arvind Kejriwal, Mamata Banerjee, etc.)
+
+### Auto-Update System
+- **Election status sync** — runs every 30 minutes (upcoming → live → completed based on dates)
+- **News refresh** — runs every 2 hours from 10 RSS feeds (NDTV, TOI, The Hindu, Indian Express, Hindustan Times, India Today, Zee News, etc.)
+- Both tasks run on server startup
+- Admin panel has manual "Sync Status" and "Refresh News" buttons
+
+### Live Frontend Features
+- **Breaking news ticker** — sticky red bar at top, cycles through latest headlines every 5 seconds
+- **Elections auto-refresh** — every 30 seconds via TanStack Query `refetchInterval`
+- **News auto-refresh** — every 2 minutes
+- **Vote counts auto-refresh** — every 30 seconds on election detail page
+- **Candidate & Party Updates section** — filters news for party changes, defections, new candidacies
+- **Election News grid** — 9 cards showing latest from Indian media
+
+### Key Files (non-generated)
+- `lib/api-client-react/src/news-api.ts` — news + candidate update hooks (manually written, not codegen)
+- `artifacts/api-server/src/lib/news-fetcher.ts` — RSS parser, election keyword filter, candidate update detector
+- `artifacts/api-server/src/lib/scheduler.ts` — cron jobs for sync + news
+- `artifacts/api-server/src/lib/seed-real-elections.ts` — one-time real election data seeder
+
+### Admin Credentials
+- Aadhaar: `123456789012`, Password: `admin123`

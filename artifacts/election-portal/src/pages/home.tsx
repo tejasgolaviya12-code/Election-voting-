@@ -1,16 +1,29 @@
 import { useGetElections } from "@workspace/api-client-react";
-import { useGetElectionNews } from "@workspace/api-client-react";
+import { useGetElectionNews, useGetCandidateUpdates } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { format, formatDistanceToNow } from "date-fns";
-import { Calendar, MapPin, ChevronRight, Vote, ShieldCheck, Users, BarChart2, ArrowRight, Newspaper, ExternalLink, RefreshCw } from "lucide-react";
+import { Calendar, MapPin, ChevronRight, Vote, ShieldCheck, Users, BarChart2, ArrowRight, Newspaper, ExternalLink, RefreshCw, Zap, UserCheck, UserMinus, AlertCircle } from "lucide-react";
 import { getStatusColor, getElectionTypeLabel } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useEffect, useState } from "react";
 
 export default function Home() {
-  const { data: elections, isLoading } = useGetElections();
+  const { data: elections, isLoading } = useGetElections(undefined, {
+    query: { refetchInterval: 30 * 1000 }
+  });
   const { data: newsData, isLoading: newsLoading, refetch: refetchNews } = useGetElectionNews();
+  const { data: candidateData } = useGetCandidateUpdates();
   const { isAuthenticated } = useAuth();
+
+  const [tickerIdx, setTickerIdx] = useState(0);
+  const tickerItems = newsData?.news?.slice(0, 15) || [];
+
+  useEffect(() => {
+    if (tickerItems.length === 0) return;
+    const t = setInterval(() => setTickerIdx(i => (i + 1) % tickerItems.length), 5000);
+    return () => clearInterval(t);
+  }, [tickerItems.length]);
 
   const liveElections = elections?.filter(e => e.status === 'live') || [];
   const upcomingElections = elections?.filter(e => e.status === 'upcoming') || [];
@@ -18,6 +31,39 @@ export default function Home() {
 
   return (
     <div className="flex flex-col w-full">
+
+      {/* Breaking News Ticker */}
+      {tickerItems.length > 0 && (
+        <div className="bg-red-600 text-white text-sm py-2 overflow-hidden sticky top-0 z-40 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-red-800 px-3 py-0.5 rounded font-bold uppercase tracking-wide shrink-0 text-xs">
+              <Zap className="w-3 h-3" />
+              Breaking
+            </div>
+            <motion.div
+              key={tickerIdx}
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -40 }}
+              transition={{ duration: 0.5 }}
+              className="flex-1 truncate"
+            >
+              <a
+                href={tickerItems[tickerIdx]?.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline"
+              >
+                {tickerItems[tickerIdx]?.title}
+              </a>
+            </motion.div>
+            <span className="text-red-200 text-xs shrink-0 hidden sm:block">
+              {tickerItems[tickerIdx]?.source}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-slate-900 pt-20 pb-32">
         <div className="absolute inset-0 z-0">
@@ -208,6 +254,76 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {/* Candidate Updates Section */}
+      {candidateData && candidateData.total > 0 && (
+        <div className="bg-amber-950/20 border-y border-amber-900/30 py-14">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-9 h-9 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900">Candidate & Party Updates</h2>
+                <p className="text-slate-500 text-sm">Latest party changes, new candidacies & political movements</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {candidateData.updates.slice(0, 6).map((update, i) => (
+                <motion.a
+                  key={i}
+                  href={update.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex items-start gap-4 bg-white rounded-xl border border-amber-200/50 p-4 hover:border-amber-400 hover:shadow-md transition-all duration-200 group"
+                >
+                  <div className={`w-9 h-9 rounded-xl shrink-0 flex items-center justify-center ${
+                    update.updateType === 'joins' ? 'bg-green-100' :
+                    update.updateType === 'leaves' ? 'bg-red-100' :
+                    update.updateType === 'expelled' ? 'bg-orange-100' : 'bg-blue-100'
+                  }`}>
+                    {update.updateType === 'joins' ? <UserCheck className="w-4 h-4 text-green-600" /> :
+                     update.updateType === 'leaves' ? <UserMinus className="w-4 h-4 text-red-600" /> :
+                     <AlertCircle className="w-4 h-4 text-blue-600" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                        update.updateType === 'joins' ? 'bg-green-100 text-green-700' :
+                        update.updateType === 'leaves' ? 'bg-red-100 text-red-700' :
+                        update.updateType === 'expelled' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+                      }`}>
+                        {update.updateType === 'joins' ? '↗ Joins Party' :
+                         update.updateType === 'leaves' ? '↙ Leaves Party' :
+                         update.updateType === 'expelled' ? '❌ Expelled' : '📋 Update'}
+                      </span>
+                      {update.party && (
+                        <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                          {update.party}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-semibold text-slate-800 group-hover:text-amber-700 transition-colors line-clamp-2 leading-snug">
+                      {update.title}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400">
+                      <span>{update.source}</span>
+                      <span>·</span>
+                      <span>
+                        {(() => { try { return formatDistanceToNow(new Date(update.pubDate), { addSuffix: true }); } catch { return ''; } })()}
+                      </span>
+                      <ExternalLink className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                </motion.a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Election News Section */}
       <div className="bg-slate-900 py-20">
