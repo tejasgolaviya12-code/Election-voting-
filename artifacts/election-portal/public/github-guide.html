@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>How to Push Code to GitHub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .github-logo {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      background: #e6edf3;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .github-logo svg {
+      width: 40px;
+      height: 40px;
+      fill: #0d1117;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #f0f6fc;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: #8b949e;
+      font-size: 1rem;
+    }
+
+    .step {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .step:hover {
+      border-color: #58a6ff;
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      background: #1c2128;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #238636;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #f0f6fc;
+    }
+
+    .step-subtitle {
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin-top: 2px;
+    }
+
+    .step-body {
+      padding: 24px;
+    }
+
+    .step-description {
+      color: #c9d1d9;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .terminal {
+      background: #010409;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .terminal-bar {
+      background: #21262d;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #ff5f57; }
+    .dot-yellow { background: #febc2e; }
+    .dot-green { background: #28c840; }
+
+    .terminal-label {
+      margin-left: auto;
+      color: #8b949e;
+      font-size: 0.75rem;
+    }
+
+    .terminal-body {
+      padding: 16px 20px;
+    }
+
+    .cmd-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .cmd-line:last-child { margin-bottom: 0; }
+
+    .prompt {
+      color: #3fb950;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    .cmd {
+      color: #79c0ff;
+    }
+
+    .cmd .arg {
+      color: #e3b341;
+    }
+
+    .cmd .str {
+      color: #a5d6ff;
+    }
+
+    .output {
+      color: #8b949e;
+      font-size: 0.85rem;
+      padding: 4px 0 4px 20px;
+      margin-bottom: 8px;
+    }
+
+    .visual-diagram {
+      background: #010409;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 24px;
+      margin-top: 16px;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: wrap;
+      row-gap: 12px;
+    }
+
+    .flow-box {
+      background: #1c2128;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px 18px;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .flow-box .icon {
+      font-size: 1.6rem;
+      margin-bottom: 6px;
+    }
+
+    .flow-box .label {
+      font-size: 0.8rem;
+      color: #c9d1d9;
+      font-weight: 600;
+    }
+
+    .flow-box .sublabel {
+      font-size: 0.7rem;
+      color: #8b949e;
+      margin-top: 2px;
+    }
+
+    .flow-box.highlight {
+      border-color: #58a6ff;
+      background: #1c2d40;
+    }
+
+    .arrow {
+      color: #58a6ff;
+      font-size: 1.4rem;
+      padding: 0 8px;
+    }
+
+    .tip {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #132b3a;
+      border: 1px solid #1f6feb;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      font-size: 0.88rem;
+      color: #a5d6ff;
+      line-height: 1.5;
+    }
+
+    .tip-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+    .warning {
+      background: #2b1d0e;
+      border-color: #d29922;
+      color: #e3b341;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    .badge-green { background: #1a4731; color: #3fb950; border: 1px solid #238636; }
+    .badge-blue  { background: #1c2d40; color: #58a6ff; border: 1px solid #1f6feb; }
+
+    .divider {
+      text-align: center;
+      margin: 40px 0 16px;
+      color: #8b949e;
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      color: #8b949e;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="github-logo">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.6.11.793-.26.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+        </svg>
+      </div>
+      <h1>How to Push Code to GitHub</h1>
+      <p>A step-by-step visual guide from your computer to the cloud</p>
+    </header>
+
+    <!-- FLOW OVERVIEW -->
+    <div class="visual-diagram" style="margin-bottom: 32px;">
+      <div style="text-align:center; color:#8b949e; font-size:0.8rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:18px;">The Big Picture</div>
+      <div class="flow">
+        <div class="flow-box">
+          <div class="icon">💻</div>
+          <div class="label">Your Computer</div>
+          <div class="sublabel">Local Files</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-box">
+          <div class="icon">📦</div>
+          <div class="label">git add</div>
+          <div class="sublabel">Stage Changes</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-box">
+          <div class="icon">📝</div>
+          <div class="label">git commit</div>
+          <div class="sublabel">Save Snapshot</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-box highlight">
+          <div class="icon">🚀</div>
+          <div class="label">git push</div>
+          <div class="sublabel">Upload to GitHub</div>
+        </div>
+        <div class="arrow">→</div>
+        <div class="flow-box">
+          <div class="icon">🐙</div>
+          <div class="label">GitHub</div>
+          <div class="sublabel">Remote Repo</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number">1</div>
+        <div>
+          <div class="step-title">Create a Repository on GitHub <span class="badge badge-blue">First Time Only</span></div>
+          <div class="step-subtitle">Set up a place on GitHub to store your code</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Go to <strong style="color:#58a6ff">github.com</strong>, click the <strong>+</strong> button in the top-right corner, then select <strong>New repository</strong>. Give it a name and click <strong>Create repository</strong>.
+        </div>
+        <div class="visual-diagram">
+          <div class="flow" style="gap: 12px; flex-direction: column; align-items: flex-start;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="background:#238636; border-radius:6px; padding:6px 14px; font-size:0.9rem; font-weight:600;">① github.com → Sign In</div>
+              <div style="color:#8b949e">→</div>
+              <div style="background:#21262d; border:1px solid #30363d; border-radius:6px; padding:6px 14px; font-size:0.9rem;">② Click <strong style="color:#58a6ff">+</strong> (top right)</div>
+              <div style="color:#8b949e">→</div>
+              <div style="background:#21262d; border:1px solid #30363d; border-radius:6px; padding:6px 14px; font-size:0.9rem;">③ New Repository</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div style="background:#21262d; border:1px solid #30363d; border-radius:6px; padding:6px 14px; font-size:0.9rem;">④ Enter repo name (e.g. <code style="color:#e3b341">my-project</code>)</div>
+              <div style="color:#8b949e">→</div>
+              <div style="background:#238636; border-radius:6px; padding:6px 14px; font-size:0.9rem; font-weight:600; color:#fff;">⑤ Click "Create repository"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number">2</div>
+        <div>
+          <div class="step-title">Initialize Git in Your Project <span class="badge badge-blue">First Time Only</span></div>
+          <div class="step-subtitle">Turn your local folder into a Git repository</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Open your terminal and navigate to your project folder, then run these commands:
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <span class="terminal-label">Terminal</span>
+          </div>
+          <div class="terminal-body">
+            <div class="cmd-line">
+              <span class="prompt">$</span>
+              <span class="cmd">cd <span class="arg">your-project-folder</span></span>
+            </div>
+            <div class="cmd-line">
+              <span class="prompt">$</span>
+              <span class="cmd">git init</span>
+            </div>
+            <div class="output">Initialized empty Git repository in .git/</div>
+          </div>
+        </div>
+        <div class="tip"><span class="tip-icon">💡</span> <span><strong>cd</strong> means "change directory." Replace <code>your-project-folder</code> with the actual path to your project, e.g. <code>cd Desktop/my-app</code></span></div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number">3</div>
+        <div>
+          <div class="step-title">Connect to Your GitHub Repository <span class="badge badge-blue">First Time Only</span></div>
+          <div class="step-subtitle">Link your local project to the remote repository</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Copy the repository URL from GitHub (it looks like <code style="color:#e3b341">https://github.com/yourusername/my-project.git</code>) and run:
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <span class="terminal-label">Terminal</span>
+          </div>
+          <div class="terminal-body">
+            <div class="cmd-line">
+              <span class="prompt">$</span>
+              <span class="cmd">git remote add origin <span class="str">https://github.com/yourusername/my-project.git</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="tip"><span class="tip-icon">💡</span> <span><strong>origin</strong> is just a nickname for your GitHub URL. You'll use this nickname when pushing code.</span></div>
+      </div>
+    </div>
+
+    <div class="divider">Every time you want to push new changes</div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number">4</div>
+        <div>
+          <div class="step-title">Stage Your Changes <span class="badge badge-green">Repeat Each Time</span></div>
+          <div class="step-subtitle">Tell Git which files you want to include</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          First, check what files have changed, then stage them:
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <span class="terminal-label">Terminal</span>
+          </div>
+          <div class="terminal-body">
+            <div class="cmd-line">
+              <span class="prompt">$</span>
+              <span class="cmd">git status</span>
+            </div>
+            <div class="output">On branch main<br>Untracked files: index.html, style.css</div>
+            <div class="cmd-line" style="margin-top:12px;">
+              <span class="prompt">$</span>
+              <span class="cmd">git add <span class="arg">.</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="tip"><span class="tip-icon">💡</span><span>The <code style="color:#e3b341">.</code> (dot) means "add ALL changed files." You can also add one file at a time: <code>git add index.html</code></span></div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number">5</div>
+        <div>
+          <div class="step-title">Commit Your Changes <span class="badge badge-green">Repeat Each Time</span></div>
+          <div class="step-subtitle">Save a snapshot of your staged files with a description</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Write a short message describing what you changed:
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <span class="terminal-label">Terminal</span>
+          </div>
+          <div class="terminal-body">
+            <div class="cmd-line">
+              <span class="prompt">$</span>
+              <span class="cmd">git commit -m <span class="str">"Add homepage and styles"</span></span>
+            </div>
+            <div class="output">[main (root-commit) a1b2c3d] Add homepage and styles<br>2 files changed, 45 insertions(+)</div>
+          </div>
+        </div>
+        <div class="tip warning"><span class="tip-icon">⚠️</span><span>Always write a meaningful message — avoid vague messages like <code>"stuff"</code> or <code>"changes"</code>. Good messages help you understand your history later.</span></div>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-number">6</div>
+        <div>
+          <div class="step-title">Push to GitHub <span class="badge badge-green">Repeat Each Time</span></div>
+          <div class="step-subtitle">Upload your committed changes to the remote repository</div>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="step-description">
+          Send your commits up to GitHub:
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+            <span class="terminal-label">Terminal</span>
+          </div>
+          <div class="terminal-body">
+            <div class="cmd-line">
+              <span class="prompt">$</span>
+              <span class="cmd">git push <span class="arg">origin</span> <span class="arg">main</span></span>
+            </div>
+            <div class="output">Enumerating objects: 3, done.<br>Writing objects: 100% (3/3), 512 bytes | 512.00 KiB/s, done.<br>Branch 'main' set up to track remote branch 'main' from 'origin'.</div>
+          </div>
+        </div>
+        <div class="tip"><span class="tip-icon">💡</span><span><strong>origin</strong> is the remote (GitHub), and <strong>main</strong> is the branch name. Your branch might be called <code>master</code> on older projects — use whichever applies.</span></div>
+      </div>
+    </div>
+
+    <!-- QUICK REFERENCE -->
+    <div style="background:#161b22; border:1px solid #30363d; border-radius:12px; padding:24px; margin-top:8px;">
+      <div style="font-weight:700; font-size:1rem; color:#f0f6fc; margin-bottom:16px;">Quick Reference — Every Push in 3 Commands</div>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <span class="terminal-label">Terminal — copy & use every time</span>
+        </div>
+        <div class="terminal-body">
+          <div class="cmd-line">
+            <span class="prompt">$</span>
+            <span class="cmd">git add <span class="arg">.</span></span>
+          </div>
+          <div class="cmd-line">
+            <span class="prompt">$</span>
+            <span class="cmd">git commit -m <span class="str">"Your message here"</span></span>
+          </div>
+          <div class="cmd-line">
+            <span class="prompt">$</span>
+            <span class="cmd">git push <span class="arg">origin</span> <span class="arg">main</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>After pushing, visit your GitHub repository page to see your files live in the cloud.</p>
+    </footer>
+
+  </div>
+</body>
+</html>
